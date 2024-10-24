@@ -1,4 +1,4 @@
-# AI-systems-lab1
+# Блок 1
 
 ## База знаний SWI-Prolog
 ```pl
