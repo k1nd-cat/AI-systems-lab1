@@ -192,64 +192,108 @@ def information_gain_criterion(column, columns) :
     return main_entropy - np.sum((subcounts / len(column)) * entropies) 
 
 
-def metrics(results, threshold) :
+def metrics(results, threshold):
     '''
-    Считает параметры
-        true_positive
-        false_positive
-        true_negative
-        false_negative
-    В зависимости от правила размещения
+    Вычисляет TP, FP, TN, FN для заданного порога.
+    
+    Аргументы:
+        results: список объектов класса Result.
+        threshold: порог вероятности для классификации.
+    
+    Возвращает:
+        (tp, fp, tn, fn): значения истинно положительных, ложноположительных,
+                          истинно отрицательных и ложноотрицательных случаев.
     '''
-    true_positive = 0
-    false_positive = 0
-    true_negative = 0
-    false_negative = 0
+    tp = 0
+    fp = 0
+    tn = 0
+    fn = 0
 
-    for result in results :
+    for result in results:
         p_probability = result.p_count / result.count
-        flag = p_probability >= threshold
-        if flag > threshold :
-            if result.expected == 1 :
-                true_positive += 1
-            else :
-                false_positive += 1
-        else :
-            if result.expected == 0 :
-                true_negative += 1
-            else :
-                false_negative += 1
+        is_positive = p_probability >= threshold
 
-    return true_positive, false_positive, true_negative, false_negative
+        if is_positive:
+            if result.expected == 1:
+                tp += 1
+            else:
+                fp += 1
+        else:
+            if result.expected == 0:
+                tn += 1
+            else:
+                fn += 1
+
+    return tp, fp, tn, fn
 
 
-def roc_args(results) :
+def roc_args(results):
     '''
-    метод для подсчёта TPR и FPR при различных порогах для построения AUC-ROC кривой
+    Вычисляет значения TPR и FPR для построения AUC-ROC кривой.
+
+    Аргументы:
+        results: список объектов класса Result.
+
+    Возвращает:
+        tpr: список значений True Positive Rate (TPR).
+        fpr: список значений False Positive Rate (FPR).
     '''
     tpr = []
     fpr = []
-    thresholds = np.arange(0.0, 1.01, 0.01)
-    for threshold in thresholds :
+
+    unique_thresholds = sorted(
+        {result.p_count / result.count for result in results}, reverse=True
+    )
+
+    tpr.append(0.0)
+    fpr.append(0.0)
+
+    for threshold in unique_thresholds:
         tp, fp, tn, fn = metrics(results, threshold)
-        current_tpr = tp / (tp + fn) if (tp + fn) > 0 else 0
-        current_fpr = fp / (fp + tn) if (fp + tn) > 0 else 0
+
+        current_tpr = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        current_fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
+
         tpr.append(current_tpr)
         fpr.append(current_fpr)
 
     return tpr, fpr
 
 
-def pr_args(results) :
+def pr_args(results):
+    '''
+    Вычисляет значения Precision и Recall для построения PR-кривой.
+    
+    Аргументы:
+        results: список объектов класса Result.
+    
+    Возвращает:
+        precisions: список значений Precision.
+        recalls: список значений Recall.
+    '''
     precisions = []
     recalls = []
-    thresholds = np.arange(0.0, 1.01, 0.01)
-    for threshold in thresholds :
+    
+    unique_thresholds = sorted(
+        {result.p_count / result.count for result in results}, reverse=True
+    )
+    
+    precisions.append(1.0)
+    recalls.append(0.0)
+
+    for threshold in unique_thresholds:
         tp, fp, _, fn = metrics(results, threshold)
-        precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-        recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+        
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+
         precisions.append(precision)
         recalls.append(recall)
+
+    # Убедимся, что кривая заканчивается на (Recall=1, Precision=0)
+    if recalls[-1] != 1.0:
+        precisions.append(0.0)
+        recalls.append(1.0)
 
     return precisions, recalls
 
@@ -273,7 +317,7 @@ for column in data.columns:
 выбираем рандомные признаки
 '''
 number_of_features = round(math.sqrt(len(data.iloc[0]) - 1))
-np.random.seed(23)
+# np.random.seed(19)
 feature_columns = data.columns.drop('class')
 selected_features = np.random.choice(feature_columns, size=number_of_features, replace=False)
 print("Случайно отобранные признаки: " + str(selected_features))
@@ -358,7 +402,7 @@ for i in range(len(y_train)) :
 root = Node(attributes)
 tree = Tree(root)
 tree.train_the_model(selected_features)
-# tree.generatr_tree_png()
+tree.generatr_tree_png()
 
 
 '''
