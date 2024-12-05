@@ -291,7 +291,7 @@ def pr_args(results):
         recalls.append(recall)
 
     # Убедимся, что кривая заканчивается на (Recall=1, Precision=0)
-    if recalls[-1] != 1.0:
+    if recalls[-1] != 1.0 or recalls[-1] != 0.0 :
         precisions.append(0.0)
         recalls.append(1.0)
 
@@ -317,7 +317,7 @@ for column in data.columns:
 выбираем рандомные признаки
 '''
 number_of_features = round(math.sqrt(len(data.iloc[0]) - 1))
-# np.random.seed(19)
+np.random.seed(19)
 feature_columns = data.columns.drop('class')
 selected_features = np.random.choice(feature_columns, size=number_of_features, replace=False)
 print("Случайно отобранные признаки: " + str(selected_features))
